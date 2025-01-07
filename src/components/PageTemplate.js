@@ -14,16 +14,20 @@ const PageTemplate = () => {
 
   const projectName = localStorage.getItem('currentProject');
   const companyName = localStorage.getItem('currentCompany');
+
+  console.log('PageTemplate rendered:', { pageId, projectName, companyName });
   
   const currentPage = PAGES.find(page => page.id === pageId);
 
   useEffect(() => {
     if (!projectName || !companyName) {
+      console.log('No project or company found, redirecting to home');
       navigate('/');
       return;
     }
 
     if (!currentPage) {
+      console.log('Invalid page ID, redirecting to home');
       navigate('/');
       return;
     }
@@ -35,62 +39,40 @@ const PageTemplate = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Loading content for:', { pageId, projectName, companyName });
+      
       const data = await fetchPageContent(pageId, projectName, companyName);
+      console.log('Content loaded:', data);
+      
       if (!data) {
         throw new Error('No content found');
       }
       setContent(data);
     } catch (err) {
-      setError('Failed to load content. Please try again.');
       console.error('Error loading page content:', err);
+      setError(err.message || 'Failed to load content. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRegenerateClick = () => {
-    setShowFeedbackModal(true);
-  };
-
-  const handleFeedbackSubmit = async () => {
-    if (!feedback.trim()) return;
-    
-    try {
-      setLoading(true);
-      setError(null);
-      await sendFeedback(pageId, projectName, companyName, feedback);
-      await loadPageContent();
-      setShowFeedbackModal(false);
-      setFeedback('');
-    } catch (err) {
-      setError('Failed to submit feedback. Please try again.');
-      console.error('Error submitting feedback:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStartOver = () => {
-    localStorage.removeItem('currentProject');
-    localStorage.removeItem('currentCompany');
-    navigate('/');
-  };
-
-  if (!projectName || !companyName) {
-    return null;
-  }
+  // Rest of the component remains the same...
 
   return (
     <div className="max-w-4xl mx-auto p-4">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">{currentPage.title}</h1>
+          <h1 className="text-2xl font-bold">{currentPage?.title}</h1>
           <div className="text-sm text-gray-600">
             Project: {projectName} | Company: {companyName}
           </div>
         </div>
         <button
-          onClick={handleStartOver}
+          onClick={() => {
+            localStorage.removeItem('currentProject');
+            localStorage.removeItem('currentCompany');
+            navigate('/');
+          }}
           className="text-sm text-gray-500 hover:text-gray-700"
         >
           Start New Project
@@ -107,11 +89,12 @@ const PageTemplate = () => {
         <div className="flex justify-center items-center min-h-[200px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         </div>
-      ) : (
+      ) : content ? (
         <div className="prose max-w-none mb-8">
-          {content && Object.entries(content).map(([key, value]) => {
-            if (key === 'id' || key === 'created_at' || key === 'updated_at' || 
-                key === 'project_name' || key === 'company_name') return null;
+          {Object.entries(content).map(([key, value]) => {
+            if (['id', 'created_at', 'updated_at', 'project_name', 'company_name'].includes(key)) {
+              return null;
+            }
             
             return (
               <div key={key} className="mb-6">
@@ -131,10 +114,14 @@ const PageTemplate = () => {
             );
           })}
         </div>
+      ) : (
+        <div className="text-center text-gray-500">
+          No content available for this section. Please regenerate content.
+        </div>
       )}
 
       <div className="flex justify-between mt-8">
-        {currentPage.previousPage && (
+        {currentPage?.previousPage && (
           <button
             onClick={() => navigate(`/${currentPage.previousPage}`)}
             className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
@@ -144,13 +131,13 @@ const PageTemplate = () => {
           </button>
         )}
         <button
-          onClick={handleRegenerateClick}
+          onClick={() => setShowFeedbackModal(true)}
           className="bg-blue-500 text-white px-4 py-2 rounded mx-2 hover:bg-blue-600 transition-colors"
           disabled={loading}
         >
-          Regenerate
+          {content ? 'Regenerate' : 'Generate Content'}
         </button>
-        {currentPage.nextPage && (
+        {currentPage?.nextPage && (
           <button
             onClick={() => navigate(`/${currentPage.nextPage}`)}
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
@@ -181,9 +168,21 @@ const PageTemplate = () => {
                 Cancel
               </button>
               <button
-                onClick={handleFeedbackSubmit}
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    await sendFeedback(pageId, projectName, companyName, feedback);
+                    await loadPageContent();
+                    setShowFeedbackModal(false);
+                    setFeedback('');
+                  } catch (err) {
+                    setError('Failed to submit feedback. Please try again.');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
                 className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-                disabled={loading}
+                disabled={loading || !feedback.trim()}
               >
                 {loading ? 'Submitting...' : 'Submit'}
               </button>
