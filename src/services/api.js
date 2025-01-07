@@ -1,34 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 
-// For debugging environment variables
-console.log('All environment variables:', {
-  NODE_ENV: process.env.NODE_ENV,
-  // Log all environment variables that start with REACT_APP or NEXT_PUBLIC
-  ...Object.fromEntries(
-    Object.entries(process.env).filter(([key]) =>
-      key.startsWith('REACT_APP_') || key.startsWith('NEXT_PUBLIC_')
-    )
-  )
-});
+// Access environment variables with REACT_APP prefix
+const SUPABASE_URL = window.REACT_APP_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
+const SUPABASE_KEY = window.REACT_APP_SUPABASE_KEY || process.env.REACT_APP_SUPABASE_KEY;
 
-// Try both REACT_APP and NEXT_PUBLIC prefixes
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.REACT_APP_SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_KEY;
-
-console.log('Supabase Config:', {
-  hasUrl: Boolean(supabaseUrl),
-  hasKey: Boolean(supabaseKey),
-  urlPrefix: supabaseUrl?.substring(0, 10),
-  keyPrefix: supabaseKey?.substring(0, 10)
+console.log('Environment Check:', {
+  windowUrl: window.REACT_APP_SUPABASE_URL,
+  windowKey: window.REACT_APP_SUPABASE_KEY,
+  envUrl: process.env.REACT_APP_SUPABASE_URL,
+  envKey: process.env.REACT_APP_SUPABASE_KEY
 });
 
 let supabase = null;
 
 try {
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing Supabase environment variables. Please check your configuration.');
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    throw new Error('Missing Supabase environment variables');
   }
-  supabase = createClient(supabaseUrl, supabaseKey);
+  supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   console.log('Supabase client created successfully');
 } catch (error) {
   console.error('Error creating Supabase client:', error);
@@ -39,7 +28,7 @@ export const fetchPageContent = async (pageId, projectName, companyName) => {
   
   try {
     if (!supabase) {
-      throw new Error('Supabase client not initialized. Please check your environment variables.');
+      throw new Error('Supabase client not initialized');
     }
 
     let table;
@@ -85,38 +74,6 @@ export const fetchPageContent = async (pageId, projectName, companyName) => {
     return data[0];
   } catch (error) {
     console.error('Error fetching page content:', error);
-    throw error;
-  }
-};
-
-export const sendFeedback = async (pageId, projectName, companyName, feedback) => {
-  const apiUrl = process.env.REACT_APP_API_URL || process.env.NEXT_PUBLIC_API_URL;
-  
-  try {
-    if (!apiUrl) {
-      throw new Error('Missing API URL environment variable');
-    }
-
-    const response = await fetch(`${apiUrl}/regenerate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        pageId, 
-        projectName, 
-        companyName, 
-        feedback 
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Error sending feedback:', error);
     throw error;
   }
 };
