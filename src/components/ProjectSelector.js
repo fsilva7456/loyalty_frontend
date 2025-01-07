@@ -1,24 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const ProjectSelector = () => {
-  console.log('ProjectSelector component rendered');
   const [projectName, setProjectName] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
-
-  useEffect(() => {
-    console.log('ProjectSelector mounted');
-  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Form submitted:', { projectName, companyName });
-    if (projectName && companyName) {
-      localStorage.setItem('currentProject', projectName);
-      localStorage.setItem('currentCompany', companyName);
-      navigate('/current-state');
+    setError('');
+
+    // Basic validation
+    if (!projectName.trim() || !companyName.trim()) {
+      setError('Please fill in all fields');
+      return;
     }
+
+    localStorage.setItem('currentProject', projectName.trim());
+    localStorage.setItem('currentCompany', companyName.trim());
+    navigate('/current-state');
   };
 
   return (
@@ -34,6 +35,16 @@ const ProjectSelector = () => {
             </p>
           </div>
 
+          {error && (
+            <div className="mt-4 bg-red-50 border-l-4 border-red-400 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <form className="space-y-6 mt-8" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="project" className="block text-sm font-medium text-gray-700">
@@ -48,6 +59,7 @@ const ProjectSelector = () => {
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Enter project name"
                 />
               </div>
             </div>
@@ -65,6 +77,7 @@ const ProjectSelector = () => {
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Enter company name"
                 />
               </div>
             </div>
