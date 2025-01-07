@@ -14,20 +14,16 @@ const PageTemplate = () => {
 
   const projectName = localStorage.getItem('currentProject');
   const companyName = localStorage.getItem('currentCompany');
-
-  console.log('PageTemplate rendered:', { pageId, projectName, companyName });
   
   const currentPage = PAGES.find(page => page.id === pageId);
 
   useEffect(() => {
     if (!projectName || !companyName) {
-      console.log('No project or company found, redirecting to home');
       navigate('/');
       return;
     }
 
     if (!currentPage) {
-      console.log('Invalid page ID, redirecting to home');
       navigate('/');
       return;
     }
@@ -39,24 +35,37 @@ const PageTemplate = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Loading content for:', { pageId, projectName, companyName });
-      
       const data = await fetchPageContent(pageId, projectName, companyName);
-      console.log('Content loaded:', data);
-      
-      if (!data) {
-        throw new Error('No content found');
-      }
       setContent(data);
     } catch (err) {
-      console.error('Error loading page content:', err);
       setError(err.message || 'Failed to load content. Please try again.');
+      console.error('Error loading page content:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Rest of the component remains the same...
+  const handleRegenerateClick = () => {
+    setShowFeedbackModal(true);
+  };
+
+  const handleFeedbackSubmit = async () => {
+    if (!feedback.trim()) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      await sendFeedback(pageId, projectName, companyName, feedback);
+      await loadPageContent();
+      setShowFeedbackModal(false);
+      setFeedback('');
+    } catch (err) {
+      setError('Failed to submit feedback. Please try again.');
+      console.error('Error submitting feedback:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-4">
@@ -89,14 +98,10 @@ const PageTemplate = () => {
         <div className="flex justify-center items-center min-h-[200px]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         </div>
-      ) : content ? (
+      ) : (
         <div className="prose max-w-none mb-8">
-          {Object.entries(content).map(([key, value]) => {
-            if (['id', 'created_at', 'updated_at', 'project_name', 'company_name'].includes(key)) {
-              return null;
-            }
-            
-            return (
+          {content ? (
+            Object.entries(content).map(([key, value]) => (
               <div key={key} className="mb-6">
                 <h3 className="text-lg font-semibold capitalize">
                   {key.replace(/_/g, ' ')}
@@ -107,16 +112,18 @@ const PageTemplate = () => {
                         <div key={i} className="mb-1">• {item}</div>
                       ))
                     : typeof value === 'object'
-                    ? JSON.stringify(value, null, 2)
+                    ? <pre className="bg-gray-50 p-2 rounded">
+                        {JSON.stringify(value, null, 2)}
+                      </pre>
                     : value}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="text-center text-gray-500">
-          No content available for this section. Please regenerate content.
+            ))
+          ) : (
+            <div className="text-center text-gray-500">
+              No content available. Click "Generate Content" to create content for this section.
+            </div>
+          )}
         </div>
       )}
 
@@ -131,7 +138,7 @@ const PageTemplate = () => {
           </button>
         )}
         <button
-          onClick={() => setShowFeedbackModal(true)}
+          onClick={handleRegenerateClick}
           className="bg-blue-500 text-white px-4 py-2 rounded mx-2 hover:bg-blue-600 transition-colors"
           disabled={loading}
         >
@@ -168,19 +175,7 @@ const PageTemplate = () => {
                 Cancel
               </button>
               <button
-                onClick={async () => {
-                  try {
-                    setLoading(true);
-                    await sendFeedback(pageId, projectName, companyName, feedback);
-                    await loadPageContent();
-                    setShowFeedbackModal(false);
-                    setFeedback('');
-                  } catch (err) {
-                    setError('Failed to submit feedback. Please try again.');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
+                onClick={handleFeedbackSubmit}
                 className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
                 disabled={loading || !feedback.trim()}
               >
