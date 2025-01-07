@@ -1,6 +1,10 @@
 {
+  "buildCommand": "CI=false npm run build",
+  "installCommand": "npm install",
+  "framework": "create-react-app",
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
-  "buildCommand": "npm run build",
-  "outputDirectory": "build",
-  "framework": "create-react-app"
+  "env": {
+    "REACT_APP_SUPABASE_URL": "@supabase_url",
+    "REACT_APP_SUPABASE_KEY": "@supabase_key"
+  }
 }

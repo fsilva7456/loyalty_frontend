@@ -1,22 +1,32 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Debug environment variables
-console.log('Environment variables check:', {
-  hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-  hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_KEY,
-  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+// For debugging environment variables
+console.log('All environment variables:', {
+  NODE_ENV: process.env.NODE_ENV,
+  // Log all environment variables that start with REACT_APP or NEXT_PUBLIC
+  ...Object.fromEntries(
+    Object.entries(process.env).filter(([key]) =>
+      key.startsWith('REACT_APP_') || key.startsWith('NEXT_PUBLIC_')
+    )
+  )
 });
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY;
+// Try both REACT_APP and NEXT_PUBLIC prefixes
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.REACT_APP_SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_KEY;
 
-console.log('Attempting to create Supabase client with:', { supabaseUrl, hasKey: !!supabaseKey });
+console.log('Supabase Config:', {
+  hasUrl: Boolean(supabaseUrl),
+  hasKey: Boolean(supabaseKey),
+  urlPrefix: supabaseUrl?.substring(0, 10),
+  keyPrefix: supabaseKey?.substring(0, 10)
+});
 
 let supabase = null;
 
 try {
   if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing Supabase environment variables');
+    throw new Error('Missing Supabase environment variables. Please check your configuration.');
   }
   supabase = createClient(supabaseUrl, supabaseKey);
   console.log('Supabase client created successfully');
@@ -29,7 +39,7 @@ export const fetchPageContent = async (pageId, projectName, companyName) => {
   
   try {
     if (!supabase) {
-      throw new Error('Supabase client not initialized');
+      throw new Error('Supabase client not initialized. Please check your environment variables.');
     }
 
     let table;
@@ -80,7 +90,7 @@ export const fetchPageContent = async (pageId, projectName, companyName) => {
 };
 
 export const sendFeedback = async (pageId, projectName, companyName, feedback) => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const apiUrl = process.env.REACT_APP_API_URL || process.env.NEXT_PUBLIC_API_URL;
   
   try {
     if (!apiUrl) {
