@@ -1,12 +1,14 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import PageTemplate from './components/PageTemplate';
 
 function App() {
   return (
     <Router>
-      <div className="App">
+      <div className="min-h-screen bg-gray-50">
         <Routes>
-          <Route path="/" element={<div>Welcome to Loyalty Frontend</div>} />
+          <Route path="/" element={<Navigate to="/current-state" replace />} />
+          <Route path="/:pageId" element={<PageTemplate />} />
         </Routes>
       </div>
     </Router>
