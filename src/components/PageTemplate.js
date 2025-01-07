@@ -11,25 +11,31 @@ const PageTemplate = () => {
   const [error, setError] = useState(null);
   const [feedback, setFeedback] = useState('');
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
+  const projectName = localStorage.getItem('currentProject');
+  const companyName = localStorage.getItem('currentCompany');
   
   const currentPage = PAGES.find(page => page.id === pageId);
 
   useEffect(() => {
-    if (!currentPage) {
-      navigate('/', { replace: true });
+    if (!projectName || !companyName) {
+      navigate('/');
       return;
     }
+
+    if (!currentPage) {
+      navigate('/');
+      return;
+    }
+    
     loadPageContent();
-  }, [pageId, currentPage, navigate]);
+  }, [pageId, currentPage, navigate, projectName, companyName]);
 
   const loadPageContent = async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching content for page:', pageId);
-      const data = await fetchPageContent(pageId);
-      console.log('Received data:', data);
-      
+      const data = await fetchPageContent(pageId, projectName, companyName);
       if (!data) {
         throw new Error('No content found');
       }
@@ -47,14 +53,12 @@ const PageTemplate = () => {
   };
 
   const handleFeedbackSubmit = async () => {
-    if (!feedback.trim()) {
-      return;
-    }
+    if (!feedback.trim()) return;
     
     try {
       setLoading(true);
       setError(null);
-      await sendFeedback(pageId, feedback);
+      await sendFeedback(pageId, projectName, companyName, feedback);
       await loadPageContent();
       setShowFeedbackModal(false);
       setFeedback('');
@@ -66,13 +70,32 @@ const PageTemplate = () => {
     }
   };
 
-  if (!currentPage) {
+  const handleStartOver = () => {
+    localStorage.removeItem('currentProject');
+    localStorage.removeItem('currentCompany');
+    navigate('/');
+  };
+
+  if (!projectName || !companyName) {
     return null;
   }
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">{currentPage.title}</h1>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">{currentPage.title}</h1>
+          <div className="text-sm text-gray-600">
+            Project: {projectName} | Company: {companyName}
+          </div>
+        </div>
+        <button
+          onClick={handleStartOver}
+          className="text-sm text-gray-500 hover:text-gray-700"
+        >
+          Start New Project
+        </button>
+      </div>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
@@ -85,19 +108,28 @@ const PageTemplate = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         </div>
       ) : (
-        <div className="prose max-w-none mb-8 whitespace-pre-wrap">
-          {/* Debug information */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="bg-gray-100 p-4 mb-4 rounded">
-              <p>Debug Info:</p>
-              <pre className="text-sm">
-                {JSON.stringify({ pageId, content }, null, 2)}
-              </pre>
-            </div>
-          )}
-          
-          {/* Actual content */}
-          <div dangerouslySetInnerHTML={{ __html: content?.content || 'No content available' }} />
+        <div className="prose max-w-none mb-8">
+          {content && Object.entries(content).map(([key, value]) => {
+            if (key === 'id' || key === 'created_at' || key === 'updated_at' || 
+                key === 'project_name' || key === 'company_name') return null;
+            
+            return (
+              <div key={key} className="mb-6">
+                <h3 className="text-lg font-semibold capitalize">
+                  {key.replace(/_/g, ' ')}
+                </h3>
+                <div className="mt-2">
+                  {Array.isArray(value) 
+                    ? value.map((item, i) => (
+                        <div key={i} className="mb-1">• {item}</div>
+                      ))
+                    : typeof value === 'object'
+                    ? JSON.stringify(value, null, 2)
+                    : value}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
