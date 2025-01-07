@@ -26,7 +26,10 @@ const PageTemplate = () => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Fetching content for page:', pageId);
       const data = await fetchPageContent(pageId);
+      console.log('Received data:', data);
+      
       if (!data) {
         throw new Error('No content found');
       }
@@ -82,8 +85,19 @@ const PageTemplate = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         </div>
       ) : (
-        <div className="prose max-w-none mb-8">
-          {content?.content}
+        <div className="prose max-w-none mb-8 whitespace-pre-wrap">
+          {/* Debug information */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="bg-gray-100 p-4 mb-4 rounded">
+              <p>Debug Info:</p>
+              <pre className="text-sm">
+                {JSON.stringify({ pageId, content }, null, 2)}
+              </pre>
+            </div>
+          )}
+          
+          {/* Actual content */}
+          <div dangerouslySetInnerHTML={{ __html: content?.content || 'No content available' }} />
         </div>
       )}
 

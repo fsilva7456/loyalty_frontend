@@ -5,20 +5,34 @@ const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.NEXT_PUBLI
 const supabaseKey = process.env.REACT_APP_SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase environment variables');
+  console.error('Missing Supabase environment variables', { 
+    hasUrl: !!supabaseUrl, 
+    hasKey: !!supabaseKey 
+  });
 }
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const fetchPageContent = async (pageId) => {
   try {
+    console.log('Fetching content for pageId:', pageId);
+    console.log('Supabase connection:', { 
+      hasUrl: !!supabaseUrl, 
+      hasKey: !!supabaseKey 
+    });
+
     const { data, error } = await supabase
       .from('page_content')
       .select('*')
       .eq('page_id', pageId)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
+
+    console.log('Received data from Supabase:', data);
     return data;
   } catch (error) {
     console.error('Error fetching page content:', error);
